@@ -35,5 +35,5 @@ Gebruik parameters
 
 Gebruik parameter
 ```
-----image=imageColorAdapted.jpg"
+--image=imageColorAdapted.jpg
 ```
