@@ -17,7 +17,7 @@ int main(int argc, const char** argv)
     if (parser.has("help"))
     {
         parser.printMessage();
-        cerr << "use parameter: --image=imageColorAdapted.png";
+        cerr << "use parameter: --image=imageColorAdapted.jpg";
         return 0;
     }
 

@@ -18,7 +18,7 @@ int main(int argc, const char** argv)
     if (parser.has("help"))
     {
         parser.printMessage();
-        cerr << "use parameters: --image_color=imageColor.png --image_bimodal=imageBimodal.png";
+        cerr << "use parameters: --image_color=imageColor.jpg --image_bimodal=imageBimodal.jpg";
         return 0;
     }
 
