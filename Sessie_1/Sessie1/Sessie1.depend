@@ -1,5 +1,0 @@
-# depslib dependency file v1.0
-1540540298 source:/home/student/2018_BeeldInterpretatie_MesutBilican/2018_BeeldInterpretatie_MesutBilican/Sessie_1/Sessie1/main.cpp
-	<iostream>
-	<opencv2/opencv.hpp>
-
