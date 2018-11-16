@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1542356483 source:/home/student/Github/2018_BeeldInterpretatie_MesutBilican/Sessie_3/Sessie_3/main.cpp
+	<iostream>
+	<opencv2/opencv.hpp>
+	"opencv2/imgcodecs.hpp"
+	"opencv2/highgui.hpp"
+	"opencv2/imgproc.hpp"
+
