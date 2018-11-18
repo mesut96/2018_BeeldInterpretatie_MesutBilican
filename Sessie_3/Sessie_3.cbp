@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters=' --image_template=&quot;template.jpg&quot; --image_recht=&quot;recht.jpg&quot;' />
+				<Option parameters=' --image_template=&quot;template.jpg&quot; --image_recht=&quot;recht.jpg&quot; --image_rot=&quot;rot.jpg&quot;' />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -40,6 +40,7 @@
 		<Extensions>
 			<code_completion />
 			<debugger />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
