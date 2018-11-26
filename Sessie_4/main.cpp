@@ -27,7 +27,7 @@ int main( int argc, char** argv )
     if (parser.has("help"))
     {
         parser.printMessage();
-        cerr << "use parameters: --image_template=fitness_object.png --image_objects=fitness_image";
+        cerr << "use parameters: --image_template=fitness_object.png --image_objects=fitness_image.png";
         return 0;
     }
 
@@ -44,12 +44,14 @@ int main( int argc, char** argv )
     /// Read and show template image
     Mat img_templ;
     img_templ = imread(imagepath_template);
+    namedWindow("Template image", WINDOW_NORMAL);
     imshow("Template image", img_templ);
     waitKey(0);
 
     /// Read and show image with different objects
     Mat img_objects;
     img_objects = imread(imagepath_objects);
+    namedWindow("Multiple objects", WINDOW_NORMAL);
     imshow("Multiple objects", img_objects);
     waitKey(0);
 
@@ -82,8 +84,10 @@ void ORB_KeypointsDetection(Mat tmpl, Mat img)
     drawKeypoints(img.clone(), keypoints_img, img_keypoints);
 
     // show detected keypoints
+    namedWindow("ORB detected keypoints template", WINDOW_NORMAL);
     imshow("ORB detected keypoints template", tmpl_keypoints);
     waitKey(0);
+    namedWindow("ORB detected keypoints image", WINDOW_NORMAL);
     imshow("ORB detected keypoints image", img_keypoints);
     waitKey(0);
 
@@ -113,8 +117,10 @@ void BRISK_KeypointsDetection(Mat tmpl, Mat img)
     drawKeypoints(img.clone(), keypoints_img, img_keypoints);
 
     // show detected keypoints
+    namedWindow("BRISK detected keypoints template", WINDOW_NORMAL);
     imshow("BRISK detected keypoints template", tmpl_keypoints);
     waitKey(0);
+    namedWindow("BRISK detected keypoints image", WINDOW_NORMAL);
     imshow("BRISK detected keypoints image", img_keypoints);
     waitKey(0);
 
@@ -144,8 +150,10 @@ void AKAZE_KeypointsDetection(Mat tmpl, Mat img)
     drawKeypoints(img.clone(), keypoints_img, img_keypoints);
 
     // show detected keypoints
+    namedWindow("AKAZE detected keypoints template", WINDOW_NORMAL);
     imshow("AKAZE detected keypoints template", tmpl_keypoints);
     waitKey(0);
+    namedWindow("AKAZE detected keypoints image", WINDOW_NORMAL);
     imshow("AKAZE detected keypoints image", img_keypoints);
     waitKey(0);
 
@@ -172,6 +180,7 @@ void KeypointMatching(string name, Mat tmpl, Mat img, std::vector<KeyPoint> keyp
     Mat img_matches;
     drawMatches(tmpl, keypoints_tmpl, img, keypoints_img, matches, img_matches);
 
+    namedWindow(name, WINDOW_NORMAL);
     imshow(name, img_matches);
     waitKey(0);
 
@@ -194,13 +203,19 @@ void KeypointMatching(string name, Mat tmpl, Mat img, std::vector<KeyPoint> keyp
     std::vector<Point2f> scene_corners(4);
     perspectiveTransform(obj_corners, scene_corners, homography);
 
-    line(img_matches, scene_corners[0]+tmpl.width, scene_corners[1],Scalar(0,255,0), 3);
+    // translate corners over tmpl width
+    scene_corners[0].x += tmpl.cols;
+    scene_corners[1].x += tmpl.cols;
+    scene_corners[2].x += tmpl.cols;
+    scene_corners[3].x += tmpl.cols;
+
+    line(img_matches, scene_corners[0], scene_corners[1],Scalar(0,255,0), 3);
     line(img_matches, scene_corners[1], scene_corners[2],Scalar(0,255,0), 3);
     line(img_matches, scene_corners[2], scene_corners[3],Scalar(0,255,0), 3);
     line(img_matches, scene_corners[3], scene_corners[0],Scalar(0,255,0), 3);
 
+    namedWindow("tadaa "+name, WINDOW_NORMAL);
     imshow("tadaa "+name, img_matches);
     waitKey(0);
 }
-
 
