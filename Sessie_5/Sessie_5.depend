@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1543567558 source:/home/student/Github/2018_BeeldInterpretatie_MesutBilican/Sessie_5/main.cpp
+1543954390 source:/home/mesut/2018_BeeldInterpretatie_MesutBilican/Sessie_5/main.cpp
 	<iostream>
 	"opencv2/core.hpp"
 	<opencv2/opencv.hpp>
