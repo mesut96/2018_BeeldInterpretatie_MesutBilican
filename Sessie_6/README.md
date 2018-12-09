@@ -12,3 +12,5 @@ In dit labo gaan we 2 verschillende soorten object detectors gebruiken om eerst 
 
 ## Usage
 Gebruik `--video_faces=faces.mp4` in *faces* en `--video_people=people.mp4` in *people* als parameter.
+
+Met \<ESC> kan de video afgesloten worden.
