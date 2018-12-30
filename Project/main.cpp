@@ -10,6 +10,7 @@
 #include "opencv2/highgui.hpp"
 #include "math.h"
 #include <opencv2/features2d/features2d.hpp>
+#include "opencv2/ml.hpp"
 
 using namespace std;
 using namespace cv;
@@ -17,31 +18,68 @@ using namespace ml;
 
 /// Function Headers
 Mat resizeImage(Mat image);
-Ptr<SVM> trainDataset();
-int classifyLeaf(Mat image, Ptr<SVM> svm);
-vector<float> featureExtraction(Mat image);
-
-/// Globals
+Ptr<SVM> trainDataset(string path_dataset);
+float classifyLeaf(Mat image, Ptr<SVM> svm);
+vector<float> featureExtraction(Mat image, bool test);
 
 
 int main( int argc, char** argv )
 {
+    /// Adding a little help option and command line parser input
+    CommandLineParser parser(argc, argv,
+        "{ help h usage ? || show this message }"
+        "{ folder_trainingData tr  || (required) path to folder }"
+        "{ folder_testData te  || (required) path to folder }"
+    );
+    /// If help is entered
+    if (parser.has("help"))
+    {
+        parser.printMessage();
+        cerr << "use parameters: --folder_trainingData=Trainingdata --folder_testData=Testdata" << endl;
+
+        return 0;
+    }
+
+    /// Collect data from arguments
+    string folder_trainingData(parser.get<string>("folder_trainingData"));
+    string folder_testData(parser.get<string>("folder_testData"));
+
+    ifstream test1(folder_trainingData);    // check if folder exists
+    if(!test1)
+    {
+        cerr << "Folder of training data does not exist!" << endl;
+        parser.printMessage();
+        return -1;
+    }
+
+    ifstream test2(folder_testData);        // check if folder exists
+    if(!test2)
+    {
+        cerr << "Folder of test data does not exist!" << endl;
+        parser.printMessage();
+        return -1;
+    }
+
+    if (folder_trainingData.empty()||folder_testData.empty())
+    {
+        cerr << "Please run with folders.\n";
+        parser.printMessage();
+        return -1;
+    }
+
+
     ///######################### Training #########################
     Ptr<SVM> svm;
-    svm = trainDataset();
+    svm = trainDataset(folder_trainingData);
 
     map<int, string> leafLookUpTable;
     leafLookUpTable[0] = "Big-fruited Holly";
-    leafLookUpTable[1] = "castor aralia";
-    leafLookUpTable[2] = "Chinese cinnamon";
-    leafLookUpTable[3] = "Chinese redbud";
-    leafLookUpTable[4] = "deodar";
-    leafLookUpTable[5] = "goldenrain tree";
-    leafLookUpTable[6] = "Japanese maple";
-    leafLookUpTable[7] = "Nanmu";
-    leafLookUpTable[8] = "pubescent bamboo";
-    leafLookUpTable[9] = "true indigo";
-    leafLookUpTable[10] = "tangerine";
+    leafLookUpTable[1] = "tangerine";
+    leafLookUpTable[2] = "Chinese redbud";
+    leafLookUpTable[3] = "Japanese maple";
+    leafLookUpTable[4] = "goldenrain tree";
+    leafLookUpTable[5] = "Nanmu";
+
 
     ///######################### Reading image #########################
     while(1)
@@ -50,11 +88,12 @@ int main( int argc, char** argv )
         cout << "Please enter path of the image:" << endl;
         cin >> image_path;
 
+        string full_path = folder_testData+"/"+image_path;
 
         if(image_path=="q")
-          return 0;    // Press q to exit
+          return 0;         // Press q to exit
 
-        ifstream test(image_path);
+        ifstream test(full_path);
         if(!test)
         {
             cout << "This image does not exist!" << endl;
@@ -62,71 +101,40 @@ int main( int argc, char** argv )
         else
         {
             Mat image;
-            image = imread(image_path);
+
+            image = imread(full_path);
             namedWindow("leaf", WINDOW_NORMAL);
             imshow("leaf", resizeImage(image));
-            waitKey(0);
 
             int klasse;
-            klasse = classifyLeaf(image, svm);
-
-//            cout << "klasse: " << klasse << endl;
+            klasse = round(classifyLeaf(image, svm));   // classify leaf
             cout << "Leaf: " << leafLookUpTable[klasse] << endl;
+            waitKey(1);
         }
     }
-
-//    Mat bgr[3];
-//    Mat blue, green, red;
-//
-//    split(image_masked,bgr);
-//    blue = bgr[0];
-//    green = bgr[1];
-//    red = bgr[2];
-//
-//    namedWindow("blue", WINDOW_NORMAL);
-//    imshow("blue", resizeImage(blue));
-//    waitKey(0);
-//
-//    namedWindow("green", WINDOW_NORMAL);
-//    imshow("green", resizeImage(green));
-//    waitKey(0);
-//
-//    namedWindow("red", WINDOW_NORMAL);
-//    imshow("red", resizeImage(red));
-//    waitKey(0);
 
     return 0;
 
 }
 
-Ptr<SVM> trainDataset()
+Ptr<SVM> trainDataset(string path_dataset)
 {
-    string path_dataset = "Trainingdata";
+//    string path_dataset = "Trainingdata";
 
     string path_set00 = path_dataset + "/Big-fruited_Holly/*.jpg";
-    string path_set01 = path_dataset + "/castor_aralia/*.jpg";
-    string path_set02 = path_dataset + "/Chinese_cinnamon/*.jpg";
-    string path_set03 = path_dataset + "/Chinese_redbud/*.jpg";
-    string path_set04 = path_dataset + "/deodar/*.jpg";
-    string path_set05 = path_dataset + "/goldenrain_tree/*.jpg";
-    string path_set06 = path_dataset + "/Japanese_maple/*.jpg";
-    string path_set07 = path_dataset + "/Nanmu/*.jpg";
-    string path_set08 = path_dataset + "/pubescent_bamboo/*.jpg";
-    string path_set09 = path_dataset + "/true_indigo/*.jpg";
-    string path_set10 = path_dataset + "/tangerine/*.jpg";
+    string path_set01 = path_dataset + "/tangerine/*.jpg";
+    string path_set02 = path_dataset + "/Chinese_redbud/*.jpg";
+    string path_set03 = path_dataset + "/Japanese_maple/*.jpg";
+    string path_set04 = path_dataset + "/goldenrain_tree/*.jpg";
+    string path_set05 = path_dataset + "/Nanmu/*.jpg";
 
     vector<string> path_sets;
     path_sets.push_back(path_set00);
     path_sets.push_back(path_set01);
     path_sets.push_back(path_set02);
-//    path_sets.push_back(path_set03);
-//    path_sets.push_back(path_set04);
-//    path_sets.push_back(path_set05);
-//    path_sets.push_back(path_set06);
-//    path_sets.push_back(path_set07);
-//    path_sets.push_back(path_set08);
-//    path_sets.push_back(path_set09);
-//    path_sets.push_back(path_set10);
+    path_sets.push_back(path_set03);
+    path_sets.push_back(path_set04);
+    path_sets.push_back(path_set05);
 
     vector<String> fn;
     vector<Mat> data;
@@ -136,9 +144,9 @@ Ptr<SVM> trainDataset()
 
     cerr << "Extracting features ... " << endl;
 
-    for(size_t i=0; i<path_sets.size(); i++)    // doorloop verschillende mappen
+    for(size_t i=0; i<path_sets.size(); i++)    // doorloop verschillende mappen in Trainingdata
     {
-        glob(path_sets[i], fn, true);           // doorloop alle afbeeldingen in één map
+        glob(path_sets[i], fn, true);           // doorloop alle afbeeldingen in 1 map
 
         vector<vector<float>> descriptor;
         // de features die we gebruiken zijn het volgende:
@@ -149,11 +157,8 @@ Ptr<SVM> trainDataset()
         {
             Mat im = imread(fn[j]);
 
-//            imshow("test", resizeImage(im));
-//            waitKey(0);
-
-            vector<float> descript = featureExtraction(im);    // steek de gevonden features van één beeld in een vector
-            descriptor.push_back(descript);
+            vector<float> descript = featureExtraction(im, 0);  // steek de gevonden features van 1 beeld in een vector
+            descriptor.push_back(descript);                     // steek de vector in de vector van de klasse
         }
 
         Mat trainingdata_single(descriptor.size(), descriptor[0].size(), CV_32FC1);
@@ -163,15 +168,15 @@ Ptr<SVM> trainDataset()
         {
             for(size_t l=0; l<descriptor[0].size(); l++)
             {
-                trainingdata_single.at<float>(k,l) = descriptor[k][l];  // steek de descriptoren in een training Mat
+                trainingdata_single.at<float>(k,l) = descriptor[k][l];  // vorm de descriptor vector om in een training matrix
             }
         }
 
 //        cerr << "trainingdata_single : " << trainingdata_single << endl;
 
-        trainingdata.push_back(trainingdata_single);
+        trainingdata.push_back(trainingdata_single);    // de training matrix van verschillende klassne steken we in en vector
         labeldata_single *= i;
-        labeldata.push_back(labeldata_single);
+        labeldata.push_back(labeldata_single);          // hetzelfde doen w emet de labels
 
 //        cerr << "labeldata_single : " << labeldata_single << endl;
         labeldata[i] = labeldata_single;
@@ -192,47 +197,46 @@ Ptr<SVM> trainDataset()
 
     cerr << "Training a Support Vector Machine Classifier ... " << endl;
 
-    //svm->trainAuto(training_data, 10, )
-
     Ptr<SVM> svm = SVM::create();
-    svm->setP(0.1);
+    //ml::ParamGrid Cgrid
+    //svm->trainAuto(training_data, 10, Cgrid, gammaGrid, pGrid, nuGrid, coeffGrid, degreeGrid);
+
+    svm->setP(1e-3);
+//    svm->setC(1000);
+//    svm->setDegree(3);
+//    svm->setGamma(1);
     svm->setType(SVM::EPS_SVR);
-    svm->setKernel(SVM::RBF);
-    svm->setTermCriteria(TermCriteria(TermCriteria::MAX_ITER, 100, 1e-6));
+    svm->setKernel(SVM::INTER);
+    svm->setTermCriteria(TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, 1e5, 1e-6));
     svm->train(training_data, ROW_SAMPLE, labels);
+//    svm->trainAuto(ml::TrainData::create(training_data, ROW_SAMPLE, labels));
     cerr << "Training a Support Vector Machine Classifier DONE " << endl;
 
     return svm;
 }
 
-int classifyLeaf(Mat image, Ptr<SVM> svm)
+float classifyLeaf(Mat image, Ptr<SVM> svm)
 {
     vector<float> features;
     Mat label_test;
-    Mat data_test(1,5,CV_32FC1);
+    Mat data_test(1,13,CV_32FC1);
 
-    features = featureExtraction(image);
+    features = featureExtraction(image, 1);
     for(size_t t=0; t<features.size(); t++)
     {
         data_test.at<float>(0,t) = features[t];
     }
 
-    cout << "area: " << features[0] << endl;
-    cout << "perimeter: " << features[1] << endl;
-    cout << "rect: " << features[2] << endl;
-    cout << "circ: " << features[3] << endl;
-    cout << "equidiameter: " << features[4] << endl;
-
 
     svm->predict(data_test, label_test);
 
-//    cerr << "gevonden label: " << label_test <<endl;
+    cerr << "Predicted label: " << label_test <<endl;
 
     return label_test.at<float>(0);
 
 }
 
-vector<float> featureExtraction(Mat image)
+vector<float> featureExtraction(Mat image, bool test)
 {
     ///######################### Pre-processing #########################
 
@@ -240,35 +244,48 @@ vector<float> featureExtraction(Mat image)
     Mat image_gray;
     cvtColor(image.clone(), image_gray, COLOR_BGR2GRAY);
 
-//    namedWindow("gray", WINDOW_NORMAL);
-//    imshow("gray", resizeImage(image_gray));
-//    waitKey(0);
+    if(test)
+    {
+        namedWindow("gray", WINDOW_NORMAL);
+        imshow("gray", resizeImage(image_gray));
+        waitKey(0);
+    }
 
     /// image smoothing
     Mat image_smooth;
 
     GaussianBlur(image_gray, image_smooth, Size(25,25), 0);
 
-//    namedWindow("smooth", WINDOW_NORMAL);
-//    imshow("smooth", resizeImage(image_smooth));
-//    waitKey(0);
+    if(test)
+    {
+        namedWindow("smooth", WINDOW_NORMAL);
+        imshow("smooth", resizeImage(image_smooth));
+        waitKey(0);
+    }
+
 
     /// thresholding
     Mat image_thresh;
     threshold(image_smooth, image_thresh, 0, 255, CV_THRESH_BINARY_INV|CV_THRESH_OTSU);
 
-//    namedWindow("threshold", WINDOW_NORMAL);
-//    imshow("threshold", resizeImage(image_thresh));
-//    waitKey(0);
+    if(test)
+    {
+        namedWindow("threshold", WINDOW_NORMAL);
+        imshow("threshold", resizeImage(image_thresh));
+        waitKey(0);
+    }
 
     /// closing
     Mat image_closed;
     dilate(image_thresh, image_closed, Mat(), Point(-1,-1), 5);
     erode(image_closed, image_closed, Mat(), Point(-1,-1), 5);
 
-//    namedWindow("closed", WINDOW_NORMAL);
-//    imshow("closed", resizeImage(image_closed));
-//    waitKey(0);
+    if(test)
+    {
+        namedWindow("closed", WINDOW_NORMAL);
+        imshow("closed", resizeImage(image_closed));
+        waitKey(0);
+    }
 
     /// boundary extraction
     Mat image_contour = Mat::zeros(image.size(), CV_8UC1);
@@ -285,9 +302,12 @@ vector<float> featureExtraction(Mat image)
         drawContours(image_contour, contours, -1, 255, 5);
     }
 
-//    namedWindow("contour", WINDOW_NORMAL);
-//    imshow("contour", resizeImage(image_contour));
-//    waitKey(0);
+    if(test)
+    {
+        namedWindow("contour", WINDOW_NORMAL);
+        imshow("contour", resizeImage(image_contour));
+        waitKey(0);
+    }
 
     Mat image_contour_inv;
     Mat image_origin_cont;
@@ -296,9 +316,13 @@ vector<float> featureExtraction(Mat image)
 
     image_gray.copyTo(image_origin_cont, image_contour_inv);
 
-//    namedWindow("original + contour", WINDOW_NORMAL);
-//    imshow("original + contour", resizeImage(image_origin_cont));
-//    waitKey(0);
+    if(test)
+    {
+        namedWindow("original + contour", WINDOW_NORMAL);
+        imshow("original + contour", resizeImage(image_origin_cont));
+        waitKey(0);
+    }
+
 
     ///######################### Feature extraction #########################
 
@@ -309,11 +333,9 @@ vector<float> featureExtraction(Mat image)
 
     double area;
     area = contourArea(cnt);
-//    cerr << "area: " << area << endl;
 
     double perimeter;
     perimeter = arcLength(cnt, true);
-//    cerr << "perimeter: " << perimeter << endl;
 
     Rect rect;
     double width, height;
@@ -323,15 +345,12 @@ vector<float> featureExtraction(Mat image)
 
     double rectangularity;
     rectangularity = (width*height)/area;
-//    cerr << "rectangularity: " << rectangularity << endl;
 
     double circularity;
     circularity = (perimeter*perimeter)/area;
-//    cerr << "circularity: " << circularity << endl;
 
     double equi_diameter;
     equi_diameter = sqrt(4*area/M_PI);
-//    cerr << "equi_diameter: " << equi_diameter << endl;
 
     /// Color based features
     Mat image_masked;
@@ -348,40 +367,42 @@ vector<float> featureExtraction(Mat image)
     saturation = hsv[1];
     value = hsv[2];
 
-//    namedWindow("hue", WINDOW_NORMAL);
-//    imshow("hue", resizeImage(hue));
-//    waitKey(0);
-
-//    namedWindow("saturation", WINDOW_NORMAL);
-//    imshow("saturation", resizeImage(saturation));
-//    waitKey(0);
-
-//    namedWindow("value", WINDOW_NORMAL);
-//    imshow("value", resizeImage(value));
-//    waitKey(0);
 
     Scalar hsv_mean, hsv_stddev;
 
     meanStdDev(image_hsv, hsv_mean, hsv_stddev, image_closed);
-//    cerr << "hue: " << hsv_mean[0] << "    stddev: " << hsv_stddev[0] << endl;
-//    cerr << "sat: " << hsv_mean[1] << "    stddev: " << hsv_stddev[1] << endl;
-//    cerr << "val: " << hsv_mean[2] << "    stddev: " << hsv_stddev[2] << endl;
 
     vector<float> features;
     features.push_back((float)area);
     features.push_back((float)perimeter);
-//    features.push_back((float)width);
-//    features.push_back((float)height);
+    features.push_back((float)width);
+    features.push_back((float)height);
     features.push_back((float)rectangularity);
     features.push_back((float)circularity);
     features.push_back((float)equi_diameter);
-//    features.push_back((float)hsv_mean[0]);
-//    features.push_back((float)hsv_mean[1]);
-//    features.push_back((float)hsv_mean[2]);
-//    features.push_back((float)hsv_stddev[0]);
-//    features.push_back((float)hsv_stddev[1]);
-//    features.push_back((float)hsv_stddev[2]);
+    features.push_back((float)hsv_mean[0]);
+    features.push_back((float)hsv_mean[1]);
+    features.push_back((float)hsv_mean[2]);
+    features.push_back((float)hsv_stddev[0]);
+    features.push_back((float)hsv_stddev[1]);
+    features.push_back((float)hsv_stddev[2]);
 
+     if(test)
+     {
+         cout << "area: " << area <<endl;
+         cout << "perimeter: " << perimeter <<endl;
+         cout << "width: " << width <<endl;
+         cout << "height: " << height <<endl;
+         cout << "rectangularity: " << rectangularity <<endl;
+         cout << "circularity: " << circularity <<endl;
+         cout << "equi_diameter: " << equi_diameter <<endl;
+         cout << "average hue: " << hsv_mean[0] <<endl;
+         cout << "average saturation: " << hsv_mean[1] <<endl;
+         cout << "average value: " << hsv_mean[2] <<endl;
+         cout << "std. dev. hue: " << hsv_stddev[0] <<endl;
+         cout << "std. dev. saturation: " << hsv_stddev[1] <<endl;
+         cout << "std. dev. value: " << hsv_stddev[2] <<endl;
+     }
 
     return features;
 }
