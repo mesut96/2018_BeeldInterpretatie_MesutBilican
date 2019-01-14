@@ -2,11 +2,10 @@
 ## Leaf Classificator
 
 ### Parameters
-Gebruik ```--folder_trainingData=Trainingdata --folder_testData=Testdata``` als paremeters.
+Gebruik ```--folder_trainingData=Trainingdata --folder_testData=Testdata --pre_processing=0``` als paremeters voor testdata zonder random internet foto's en ```--folder_trainingData=Trainingdata --folder_testData=Testdata --pre_processing=1``` voor willekeurige internet foto's.
 
-### To Do
-* Training data toevoegen
-* Test data toevoegen
+### Training- en testdata
+* zie Google drive
 
 ### Referenties
 [Flavia (at a glance): a Leaf Recognition Algorithm for Plant Classification using PNN (Probabilistic Neural Network)](http://flavia.sourceforge.net/)

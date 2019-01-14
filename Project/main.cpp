@@ -21,7 +21,10 @@ Mat resizeImage(Mat image);
 Ptr<SVM> trainDataset(string path_dataset);
 float classifyLeaf(Mat image, Ptr<SVM> svm);
 vector<float> featureExtraction(Mat image, bool test);
+Mat preProcessing(Mat image);
 
+/// Globals
+int SHOW = 0;
 
 int main( int argc, char** argv )
 {
@@ -30,12 +33,13 @@ int main( int argc, char** argv )
         "{ help h usage ? || show this message }"
         "{ folder_trainingData tr  || (required) path to folder }"
         "{ folder_testData te  || (required) path to folder }"
+        "{ pre_processing pr || (optional) if doing random internet images}"
     );
     /// If help is entered
     if (parser.has("help"))
     {
         parser.printMessage();
-        cerr << "use parameters: --folder_trainingData=Trainingdata --folder_testData=Testdata" << endl;
+        cerr << "use parameters: --folder_trainingData=Trainingdata --folder_testData=Testdata (--pre_processing=1)" << endl;
 
         return 0;
     }
@@ -43,6 +47,7 @@ int main( int argc, char** argv )
     /// Collect data from arguments
     string folder_trainingData(parser.get<string>("folder_trainingData"));
     string folder_testData(parser.get<string>("folder_testData"));
+    int pre_processingB(parser.get<int>("pre_processing"));
 
     ifstream test1(folder_trainingData);    // check if folder exists
     if(!test1)
@@ -66,6 +71,9 @@ int main( int argc, char** argv )
         parser.printMessage();
         return -1;
     }
+
+    if(pre_processingB!=1)
+        pre_processingB = 0;
 
 
     ///######################### Training #########################
@@ -103,6 +111,12 @@ int main( int argc, char** argv )
             Mat image;
 
             image = imread(full_path);
+
+            if(pre_processingB)
+            {
+                image = preProcessing(image);
+            }
+
             namedWindow("leaf", WINDOW_NORMAL);
             imshow("leaf", resizeImage(image));
 
@@ -221,7 +235,7 @@ float classifyLeaf(Mat image, Ptr<SVM> svm)
     Mat label_test;
     Mat data_test(1,13,CV_32FC1);
 
-    features = featureExtraction(image, 1);
+    features = featureExtraction(image, SHOW);
     for(size_t t=0; t<features.size(); t++)
     {
         data_test.at<float>(0,t) = features[t];
@@ -277,8 +291,8 @@ vector<float> featureExtraction(Mat image, bool test)
 
     /// closing
     Mat image_closed;
-    dilate(image_thresh, image_closed, Mat(), Point(-1,-1), 5);
-    erode(image_closed, image_closed, Mat(), Point(-1,-1), 5);
+    dilate(image_thresh, image_closed, Mat(), Point(-1,-1), 20);
+    erode(image_closed, image_closed, Mat(), Point(-1,-1), 20);
 
     if(test)
     {
@@ -329,7 +343,6 @@ vector<float> featureExtraction(Mat image, bool test)
     /// Shape based features
     Moments M;
     M = moments(cnt);
-    //cerr << "moments: " << M << endl;
 
     double area;
     area = contourArea(cnt);
@@ -405,6 +418,75 @@ vector<float> featureExtraction(Mat image, bool test)
      }
 
     return features;
+}
+
+Mat preProcessing(Mat image) // voor random internet foto's
+{
+    Mat resized;
+    resize(image.clone(), resized, Size(1600,1200));
+    namedWindow("resized", WINDOW_NORMAL);
+    imshow("resized", resizeImage(resized));
+    waitKey(0);
+
+    Mat smooth;
+    GaussianBlur(resized, smooth, Size(69,69),0);
+    namedWindow("smooth", WINDOW_NORMAL);
+    imshow("smooth", resizeImage(smooth));
+    waitKey(0);
+
+    Mat hsv_img;    // in hsv-kleurruimte op groen filteren
+    Mat hsv[3];
+    Mat hue, sat, val;
+    cvtColor(smooth, hsv_img, COLOR_BGR2HSV);
+    split(hsv_img, hsv);
+
+    hue = hsv[0];
+    sat = hsv[1];
+    val = hsv[2];
+
+//    namedWindow("hsv_img", WINDOW_NORMAL);
+//    imshow("hsv_img", resizeImage(hsv_img));
+//    waitKey(0);
+//
+//    namedWindow("hue", WINDOW_NORMAL);
+//    imshow("hue", resizeImage(hue));
+//    waitKey(0);
+//
+//    namedWindow("sat", WINDOW_NORMAL);
+//    imshow("sat", resizeImage(sat));
+//    waitKey(0);
+//
+//    namedWindow("val", WINDOW_NORMAL);
+//    imshow("val", resizeImage(val));
+//    waitKey(0);
+
+    Mat mask;
+    inRange(hsv_img, Scalar(50,15,100), Scalar(100,255,255), mask);
+    namedWindow("mask", WINDOW_NORMAL);
+    imshow("mask", resizeImage(mask));
+    waitKey(0);
+
+    Mat closing;
+    dilate(mask, closing, Mat(), Point(-1,-1), 33);
+    erode(closing, closing, Mat(), Point(-1,-1), 33);
+    namedWindow("closing", WINDOW_NORMAL);
+    imshow("closing", resizeImage(closing));
+    waitKey(0);
+
+    Mat clean = Mat::ones(resized.size(), CV_8UC3);
+    resized.copyTo(clean, mask);
+    namedWindow("clean", WINDOW_NORMAL);
+    imshow("clean", resizeImage(clean));
+    waitKey(0);
+
+    Mat inverse_mask;   // zwarte achtergrond wit maken
+    bitwise_not(mask, inverse_mask);
+    clean.setTo(Scalar(255,255,255), inverse_mask);
+    namedWindow("clean", WINDOW_NORMAL);
+    imshow("clean", resizeImage(clean));
+    waitKey(0);
+
+    return clean;
 }
 
 Mat resizeImage(Mat image)
